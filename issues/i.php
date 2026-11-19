@@ -1,0 +1,86 @@
+<?php
+require_once('../app/config/config.php');
+
+if (!isset($_SESSION["user"])) {
+    header("Location: /");
+    exit();
+}
+
+// Fetch issued books — join through students to get user name
+$result = $conn->query("SELECT issued_books.*, users.name AS student_name, books.title AS book_name 
+                        FROM issued_books 
+                        LEFT JOIN students ON issued_books.student_id = students.id 
+                        LEFT JOIN users ON students.stu_id = users.id 
+                        LEFT JOIN books ON issued_books.book_id = books.id 
+                        ORDER BY issued_books.id DESC");
+?>
+
+<!DOCTYPE html>
+<html>
+<head>
+<title>Issued Books</title>
+<link rel="stylesheet" href="../assets/css/style.css">
+</head>
+
+<body class="dashboard-page">
+
+<div class="dashboard">
+    <?php include('../includes/sidebar.php'); ?>
+
+<div class="main">
+        <div class="topbar">
+            <h2>Issued Books</h2>
+            <a class="logout" href="/logout">Logout</a>
+        </div>
+
+<div style="padding:0px">
+<table class="issue-table">
+<tr>
+<th>ID</th>
+<th>Student Name</th>
+<th>Book Name</th>
+<th>Issue Date</th>
+<th>Due Date</th>
+<th>Return Date</th>
+<th>Status</th>
+<th>Fine</th>
+<th>Action</th>
+</tr>
+
+                <?php if ($result->num_rows === 0) { ?>
+                <tr>
+                    <td colspan="9" style="text-align:center;">No issued books found.</td>
+                </tr>
+                <?php } else { ?>
+                <?php while ($row = $result->fetch_assoc()) { ?>
+<tr>
+<td><?php echo $row['id']; ?></td>
+                    <td><?php echo htmlspecialchars($row['student_name']); ?></td>
+                    <td><?php echo htmlspecialchars($row['book_name']); ?></td>
+<td><?php echo $row['issue_date']; ?></td>
+<td><?php echo $row['due_date']; ?></td>
+                    <td><?php echo $row['return_date'] ? $row['return_date'] : '-'; ?></td>
+<td><?php echo $row['status']; ?></td>
+<td><?php echo $row['fine_amount']; ?></td>
+<td>
+                        <?php if ($row['status'] == 'issued') { ?>
+                            <a href="/return_book?id=<?php echo $row['id']; ?>"
+       onclick="return confirm('Return this book?')">
+       🔄 Return
+    </a>
+<?php } else { ?>
+    ✔ Returned
+<?php } ?>
+</td>
+</tr>
+<?php } ?>
+                <?php } ?>
+</table>
+</div>
+
+        <?php include('../includes/footer.php'); ?>
+</div>
+</div>
+
+</body>
+</html>

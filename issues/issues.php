@@ -1,0 +1,39 @@
+<?php
+require_once('../app/config/config.php');
+
+if(!isset($_SESSION["user"])){
+    header("Location: /");
+    exit();
+}
+
+if(isset($_GET['id'])){
+
+    $book_id    = (int)$_GET['id'];
+    $user_id    = (int)$_SESSION["user"]['id'];
+
+    // get students.id using users.id
+    $stu = $conn->query("SELECT id FROM students WHERE stu_id = $user_id");
+    $stu_row = $stu->fetch_assoc();
+    $student_id = $stu_row['id'];
+
+    $result = $conn->query("SELECT * FROM books WHERE id = $book_id");
+
+    while($book = mysqli_fetch_array($result)){
+
+        if($book['available_qty'] > 0){
+
+            $issue_date = date("Y-m-d");
+            $due_date   = date("Y-m-d", strtotime("+30 days"));
+
+            $conn->query("INSERT INTO issued_books 
+            (student_id, book_id, issue_date, due_date, status, fine_amount) 
+            VALUES ('$student_id', '$book_id', '$issue_date', '$due_date', 'issued', 0)");
+
+            $conn->query("UPDATE books SET available_qty = available_qty - 1 WHERE id = $book_id");
+        }
+    }
+}
+
+header("Location: /books");
+exit();
+?>
